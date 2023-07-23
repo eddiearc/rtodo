@@ -1,6 +1,8 @@
 # rtodo
 a simple todo-list program written by rust
 
+for rust practice
+
 
 Print help command:
 ```bash
