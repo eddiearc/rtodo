@@ -78,7 +78,10 @@ impl Store {
     
         let path = match path_from_env {
              Some((_, x)) => x.to_owned(),
-             None => "~/.rtodo_db".to_string(),
+             None => match  std::env::home_dir() {
+                Some(path) => format!("{}/.rtodo_db", path.to_str().unwrap()),
+                None => "./.rtodo_db".to_string(),
+             }
         };
     
         Store {db: sled::open(path).unwrap()}
