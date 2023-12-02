@@ -26,25 +26,44 @@ fn main() {
     let store = Store::new();
     let args = Args::parse();
 
-    if let Some(content) =  args.add {
-        if let Err(msg) = store.add(Item { content }) {
-            println!("add item fail, {}", msg);
-        }
-    }
+    process(args, store);
+}
+
+fn process(args: Args, store: Store) {
+    // delete first, because delete operate dependency NO which will changed caused by add operate
     if let Some(no) = args.delete {
         if no == 0 {
-            println!("delete item fail, {}", ERR_ITEM_NOT_FOUND)
+            output::error(&format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
         } else if let Err(msg) = store.delete(no-1) {
-            println!("delete item fail, {}", msg);
+            output::error(&format!("delete item fail, {}", msg));
+        }
+    }
+    if let Some(content) =  args.add {
+        if let Err(msg) = store.add(Item { content }) {
+            output::error(&format!("add item fail, {}", msg));
         }
     }
     for (i, ele) in store.list(args.list).iter().enumerate() {
-        println!("NO:{} -> {}", i + 1, ele.content);
+        output::list_print(i+1, &ele.content);
     }
 }
 
+mod output {
+    use colored::Colorize;
+
+    pub fn list_print(no: usize, content: &str) {
+        println!("NO {}: {}", no.to_string().blue(), content.blue());
+    }
+
+    pub fn error(err_msg: &str) {
+        println!("rtodo error: {}", err_msg.red());
+    }
+
+}
+
+
 trait Operate {
-    fn add(&self, item: Item) -> Result<u32, & 'static str>;
+    fn add(&self, item: Item) -> Result<u32, &'static str>;
     fn delete(&self, no: u32) -> Result<Item, &'static str>;
     fn list(&self, keyword: Option<String>) -> Vec<Item>;
 }
@@ -78,10 +97,7 @@ impl Store {
     
         let path = match path_from_env {
              Some((_, x)) => x.to_owned(),
-             None => match  std::env::home_dir() {
-                Some(path) => format!("{}/.rtodo_db", path.to_str().unwrap()),
-                None => "./.rtodo_db".to_string(),
-             }
+             None => "./.rtodo_db".to_string(),
         };
     
         Store {db: sled::open(path).unwrap()}
@@ -96,7 +112,7 @@ impl Store {
 
 static ERR_ADD_ITEM: &'static str = "add item failed";
 
-static ERR_ITEM_NOT_FOUND: &'static str = "Item not found";
+static ERR_ITEM_NOT_FOUND: &'static str = "item not found";
 
 impl Operate for Store {
     fn add(&self, item: Item) -> Result<u32, & 'static str> {
