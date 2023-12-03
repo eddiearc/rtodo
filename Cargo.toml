@@ -11,3 +11,4 @@ sled = { version = "0.34.7"}
 serde = "1.0"
 serde_derive = "1.0"
 colored = "2"
+anyhow = "1.0"
