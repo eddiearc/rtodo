@@ -48,5 +48,8 @@ mod output {
         println!("{}", format!("rtodo error: {}", err_msg).red());
     }
 
+    pub fn info(msg: &str) {
+        println!("{}", msg.blue());
+    }
 }
 

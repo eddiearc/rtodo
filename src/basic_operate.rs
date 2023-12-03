@@ -1,4 +1,4 @@
-use std::{env, time::{UNIX_EPOCH, SystemTime}};
+use std::{env, time::{UNIX_EPOCH, SystemTime}, io, fmt::Display};
 
 use serde_derive::{Serialize, Deserialize};
 
@@ -9,9 +9,11 @@ use crate::output;
 pub(crate) fn process(args: super::Args, store: Store) {
     // delete first, because delete operate dependency NO which will changed caused by add operate
     if let Some(no) = args.delete {
-        if let Some((k, _)) = store.find_by_no(no) {
+        if let Some((k, v)) = store.find_by_no(no) {
             // todo confirm delete operate
-
+            if !is_confirm(v) {
+                output::error("cancel delete item: {}");
+            }
             // exec delete
             if let Err(msg) = store.delete(k) {
                 output::error(&format!("delete item fail, {}", msg));   
@@ -30,6 +32,13 @@ pub(crate) fn process(args: super::Args, store: Store) {
     }
 }
 
+fn is_confirm(v: Item) -> bool {
+    println!("confirm delete this item: {}? (Y/N)", v);
+    let mut input = String::new();
+    io::stdin().read_line(&mut input).expect("Failed to read line");
+    return input.trim().to_lowercase() == "y"
+}
+
 
 trait Operate {
     fn add(&self, item: Item) -> Result<u32, &'static str>;
@@ -39,9 +48,15 @@ trait Operate {
 
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug)]
 struct Item {
     content: String,
+}
+
+impl Display for Item {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{:?}", self))
+    }
 }
 
 impl Into<sled::IVec> for Item {
@@ -98,7 +113,7 @@ impl Operate for Store {
     }
 
     fn find_by_no(&self, no: usize) -> Option<(sled::IVec, Item)> {
-        if let Some(Ok((k, v))) = self.db.into_iter().nth(no) {
+        if let Some(Ok((k, v))) = self.db.into_iter().nth(no-1) {
             return Some((k, v.into()))
         }
         None
