@@ -1,5 +1,6 @@
 use std::{env, time::{UNIX_EPOCH, SystemTime}, io, fmt::Display};
 
+use colored::Colorize;
 use serde_derive::{Serialize, Deserialize};
 
 use crate::output;
@@ -29,7 +30,7 @@ pub(crate) fn process(args: super::Args, store: Store) {
         }
     }
     for (i, ele) in store.list(args.list).iter().enumerate() {
-        output::list_print(i+1, &ele.content);
+        output::list_print(i+1, ele);
     }
 }
 
@@ -50,13 +51,13 @@ trait Operate {
 }
 
 #[derive(Serialize, Deserialize, Debug)]
-struct Item {
+pub(crate) struct Item {
     content: String,
 }
 
 impl Display for Item {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{:?}", self))
+        f.write_fmt(format_args!("{}", self.content.blue()))
     }
 }
 

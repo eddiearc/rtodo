@@ -36,12 +36,14 @@ fn main() {
     }
 }
 
-mod output {
+pub(crate) mod output {
     use colored::Colorize;
 
-    pub fn list_print(no: usize, content: &str) {
+    use crate::basic_operate;
+
+    pub(crate) fn list_print(no: usize, item: &basic_operate::Item) {
         let no = format!("NO {}", no).green().on_blue();
-        println!("{}: {}", no, content.blue());
+        println!("{}: {}", no, item);
     }
 
     pub fn error(err_msg: String) {
