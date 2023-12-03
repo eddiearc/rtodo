@@ -7,47 +7,68 @@ use crate::output;
 
 
 
-pub(crate) fn process(args: super::Args, store: Store) {
+pub(crate) fn process(args: super::Args, store: impl Operate) {
     // delete first, because delete operate dependency NO which will changed caused by add operate
+    if args.delete_all {
+        delete_all(&store);
+    }
     if let Some(no) = args.delete {
-        if let Some((k, v)) = store.find_by_no(no) {
-            // todo confirm delete operate
-            if !is_confirm(no, &v) {
-                output::error(format!("cancel delete item: {}", v));
-                return 
-            }
-            // exec delete
-            if let Err(msg) = store.delete(k) {
-                output::error(format!("delete item fail, {}", msg));   
-            }
-        } else {
-            output::error(format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
-        }
+        delete(&store, no);
     }
     if let Some(content) =  args.add {
         if let Err(msg) = store.add(Item { content }) {
             output::error(format!("add item fail, {}", msg));
         }
     }
-    for (i, ele) in store.list(args.list).iter().enumerate() {
+    list_items(&store, args.list);
+}
+
+fn delete_all(store: &impl Operate) {
+    if !confirm(format!("confirm delete all items? (Y/N)")) {
+        output::error(format!("cancel delete all items"));
+        return
+    }
+     if let Err(msg) = store.delete_all() {
+        output::error(msg.to_string())
+    }
+}
+
+fn delete(store: &impl Operate, no: usize) {
+    if let Some((k, v)) = store.find_by_no(no) {
+        // todo confirm delete operate
+        if !confirm(format!("confirm delete this item: NO {}: {}? (Y/N)", no, v.content)) {
+            output::error(format!("cancel delete item: {}", v));
+            return 
+        }
+        // exec delete
+        if let Err(msg) = store.delete(k) {
+            output::error(format!("delete item fail, {}", msg));   
+        }
+    } else {
+        output::error(format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
+    }
+}
+
+fn list_items(store: &impl Operate, keyword: Option<String>) {
+    for (i, ele) in store.list(keyword).iter().enumerate() {
         output::list_print(i+1, ele);
     }
 }
 
-fn is_confirm(no: usize, v: &Item) -> bool {
-    output::info(format!("confirm delete this item: NO {}: {}? (Y/N)", no, v.content));
+fn confirm(hits: String) -> bool {
+    output::info(hits);
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to read line");
     return input.trim().to_lowercase() == "y"
 }
 
 
-trait Operate {
+pub(crate) trait Operate {
     fn add(&self, item: Item) -> Result<u32, &'static str>;
     fn find_by_no(&self, no: usize) -> Option<(sled::IVec, Item)>;
     fn delete(&self, k: sled::IVec) -> Result<Item, &'static str>;
+    fn delete_all(&self) -> anyhow::Result<()>;
     fn list(&self, keyword: Option<String>) -> Vec<Item>;
-
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -127,6 +148,10 @@ impl Operate for Store {
         }
     
         Err(ERR_ITEM_NOT_FOUND)
+    }
+
+    fn delete_all(&self) -> anyhow::Result<()> {
+        Ok(self.db.clear()?)
     }
 
     fn list(&self, _: Option<String>) -> Vec<Item> {

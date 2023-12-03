@@ -3,6 +3,7 @@ use clap::Parser;
 mod interactive;
 mod basic_operate;
 
+
 /// Simple program to greet a person
 #[derive(Parser, Debug)]
 #[command(author = "eddie", version = "0.1", about = "a simple todo-list program written by rust")]
@@ -12,13 +13,17 @@ struct Args {
     #[arg(short, long)]
     add: Option<String>,
     
-    /// list add todo items, if present fuzzy match item content
+    /// list added todo items, if present fuzzy match item content
     #[arg(short, long, default_value = "")]
     list: Option<String>,
 
     /// delete todo item by item NO
     #[arg(short, long)]
     delete: Option<usize>,
+
+    /// delete_all delete all item list
+    #[arg(long)]
+    delete_all: bool,
 
     /// use interactive mode to use rtodo
     #[arg(short, long)]
