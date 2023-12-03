@@ -11,20 +11,21 @@ pub(crate) fn process(args: super::Args, store: Store) {
     if let Some(no) = args.delete {
         if let Some((k, v)) = store.find_by_no(no) {
             // todo confirm delete operate
-            if !is_confirm(v) {
-                output::error("cancel delete item: {}");
+            if !is_confirm(no, &v) {
+                output::error(format!("cancel delete item: {}", v));
+                return 
             }
             // exec delete
             if let Err(msg) = store.delete(k) {
-                output::error(&format!("delete item fail, {}", msg));   
+                output::error(format!("delete item fail, {}", msg));   
             }
         } else {
-            output::error(&format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
+            output::error(format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
         }
     }
     if let Some(content) =  args.add {
         if let Err(msg) = store.add(Item { content }) {
-            output::error(&format!("add item fail, {}", msg));
+            output::error(format!("add item fail, {}", msg));
         }
     }
     for (i, ele) in store.list(args.list).iter().enumerate() {
@@ -32,8 +33,8 @@ pub(crate) fn process(args: super::Args, store: Store) {
     }
 }
 
-fn is_confirm(v: Item) -> bool {
-    println!("confirm delete this item: {}? (Y/N)", v);
+fn is_confirm(no: usize, v: &Item) -> bool {
+    output::info(format!("confirm delete this item: NO {}: {}? (Y/N)", no, v.content));
     let mut input = String::new();
     io::stdin().read_line(&mut input).expect("Failed to read line");
     return input.trim().to_lowercase() == "y"

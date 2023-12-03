@@ -44,11 +44,11 @@ mod output {
         println!("{}: {}", no, content.blue());
     }
 
-    pub fn error(err_msg: &str) {
+    pub fn error(err_msg: String) {
         println!("{}", format!("rtodo error: {}", err_msg).red());
     }
 
-    pub fn info(msg: &str) {
+    pub fn info(msg: String) {
         println!("{}", msg.blue());
     }
 }
