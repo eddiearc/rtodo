@@ -13,13 +13,21 @@ struct Args {
     #[arg(short, long)]
     add: Option<String>,
     
-    /// list added todo items, if present fuzzy match item content
+    /// list not done todo items, if present fuzzy match item content
     #[arg(short, long, default_value = "")]
     list: Option<String>,
 
+    /// list all todo items, include done, if present fuzzy match item content
+    #[arg(long, default_value = "")]
+    list_all: Option<String>,
+
     /// delete todo item by item NO
-    #[arg(short, long)]
+    #[arg(long)]
     delete: Option<usize>,
+
+     /// delete todo item by item NO
+     #[arg(long)]
+     done: Option<usize>,
 
     /// delete_all delete all item list
     #[arg(long)]
