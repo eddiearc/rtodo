@@ -8,13 +8,12 @@ use crate::output;
 
 
 pub(crate) fn process(args: super::Args, store: impl Operate) {
-    // delete first, because delete operate dependency NO which will changed caused by add operate
     if args.delete_all {
         delete_all(&store);
-    } else if let Some(no) = args.delete {
-        delete(&store, no);
-    } else if let Some(no) = args.done {
-        done(&store, no);
+    } else if let Some(key) = args.delete {
+        delete(&store, key.into());
+    } else if let Some(key) = args.done {
+        done(&store, key.into());
     }
     if let Some(content) =  args.add {
         if let Err(msg) = store.add(Item { content, done: false }) {
@@ -34,15 +33,15 @@ fn delete_all(store: &impl Operate) {
     }
 }
 
-fn delete(store: &impl Operate, no: usize) {
-    if let Some((k, v)) = store.find_by_no(no) {
+fn delete(store: &impl Operate, key: Key) {
+    if let Some(v) = store.find_by_key(key.clone().into()) {
         // todo confirm delete operate
-        if !confirm(format!("confirm delete this item: NO {}: {}? (Y/N)", no, v.content)) {
+        if !confirm(format!("confirm delete this item: {}: {}? (Y/N)", key, v.content)) {
             output::error(format!("cancel delete item: {}", v));
             return 
         }
         // exec delete
-        if let Err(msg) = store.delete(k) {
+        if let Err(msg) = store.delete(key.into()) {
             output::error(format!("delete item fail, {}", msg));   
         }
     } else {
@@ -50,15 +49,15 @@ fn delete(store: &impl Operate, no: usize) {
     }
 }
 
-fn done(store: &impl Operate, no: usize) {
-    if let Some((k, v)) = store.find_by_no(no) {
+fn done(store: &impl Operate, key: Key) {
+    if let Some(v) = store.find_by_key(key.clone().into()) {
         // todo confirm done operate
-        if !confirm(format!("confirm done this item: NO {}: {}? (Y/N)", no, v.content)) {
+        if !confirm(format!("confirm done this item: {}: {}? (Y/N)", key, v.content)) {
             output::error(format!("cancel done item: {}", v));
             return 
         }
         // exec done
-        if let Err(msg) = store.done(k) {
+        if let Err(msg) = store.done(key.into()) {
             output::error(format!("done item fail, {}", msg));   
         }
     } else {
@@ -103,10 +102,21 @@ impl Into<sled::IVec> for Key {
     }
 }
 
+impl Display for Key {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl Clone for Key {
+    fn clone(&self) -> Self {
+        Key(self.0.clone())
+    }
+}
 
 pub(crate) trait Operate {
     fn add(&self, item: Item) -> Result<u32, anyhow::Error>;
-    fn find_by_no(&self, no: usize) -> Option<(sled::IVec, Item)>;
+    fn find_by_key(&self, key: sled::IVec) -> Option<Item>;
     fn delete(&self, k: sled::IVec) -> Result<Item, anyhow::Error>;
     fn delete_all(&self) -> anyhow::Result<()>;
     fn list(&self, keyword: Option<String>) -> Result<Vec<KeyWithItem>, anyhow::Error>;
@@ -120,7 +130,7 @@ pub(crate) struct KeyWithItem {
 
 impl Display for KeyWithItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}: {}", self.k.0, self.v))
+        f.write_fmt(format_args!("{}: {}", self.k, self.v))
     }
     
 }
@@ -193,10 +203,10 @@ impl Operate for Store {
         }
     }
 
-    fn find_by_no(&self, no: usize) -> Option<(sled::IVec, Item)> {
-        if let Some(Ok((k, v))) = self.db.into_iter().nth(no-1) {
+    fn find_by_key(&self, key: sled::IVec) -> Option<Item> {
+        if let Ok(Some(v)) = self.db.get(key) {
             if let Ok(item) = v.try_into() {
-                return Some((k, item));
+                return Some(item);
             }
         }
         None

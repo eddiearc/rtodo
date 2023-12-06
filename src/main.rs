@@ -21,13 +21,13 @@ struct Args {
     #[arg(long, default_value = "")]
     list_all: Option<String>,
 
-    /// delete todo item by item NO
+    /// delete todo item by item Key
     #[arg(long)]
-    delete: Option<usize>,
+    delete: Option<String>,
 
-     /// delete todo item by item NO
+     /// delete todo item by item Key
      #[arg(long)]
-     done: Option<usize>,
+     done: Option<String>,
 
     /// delete_all delete all item list
     #[arg(long)]
