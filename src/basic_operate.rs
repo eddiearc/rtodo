@@ -70,8 +70,8 @@ fn list_items(store: &impl Operate, keyword: Option<String>) {
     if let Err(err) = store.list(keyword.clone()) {
         panic!("{}", err)
     }
-    for (i, ele) in  store.list(keyword).expect("list items").iter().enumerate() {
-        output::list_print(i+1, ele);
+    for (_, ele) in  store.list(keyword).expect("list items").iter().enumerate() {
+        output::list_print( ele);
     }
 }
 
@@ -88,8 +88,20 @@ pub(crate) trait Operate {
     fn find_by_no(&self, no: usize) -> Option<(sled::IVec, Item)>;
     fn delete(&self, k: sled::IVec) -> Result<Item, anyhow::Error>;
     fn delete_all(&self) -> anyhow::Result<()>;
-    fn list(&self, keyword: Option<String>) -> Result<Vec<Item>, anyhow::Error>;
+    fn list(&self, keyword: Option<String>) -> Result<Vec<KeyWithItem>, anyhow::Error>;
     fn done(&self, k: sled::IVec) -> Result<(), anyhow::Error>;
+}
+
+pub(crate) struct KeyWithItem {
+    pub(crate) k: String,
+    pub(crate) v: Item,
+}
+
+impl Display for KeyWithItem {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_fmt(format_args!("{}: {}", self.k, self.v))
+    }
+    
 }
 
 #[derive(Serialize, Deserialize, Debug)]
@@ -181,13 +193,17 @@ impl Operate for Store {
         Ok(self.db.clear()?)
     }
 
-    fn list(&self, _: Option<String>) -> Result<Vec<Item>, anyhow::Error> {
+    fn list(&self, _: Option<String>) -> Result<Vec<KeyWithItem>, anyhow::Error> {
         self.db.into_iter()
         .filter_map(|res| {
             match res {
-                Ok((_, val)) => {
+                Ok((key, val)) => {
+                let res = String::from_utf8(key.to_vec());
+                if res.is_err() {
+                    return None
+                }
                 match Item::try_from(val) {
-                    Ok(item) if !item.done => Some(Ok(item)),
+                    Ok(item) if !item.done => Some(Ok(KeyWithItem { k: res.unwrap(), v: item })),
                     _ => None
                 }
                 },

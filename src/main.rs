@@ -54,9 +54,8 @@ pub(crate) mod output {
 
     use crate::basic_operate;
 
-    pub(crate) fn list_print(no: usize, item: &basic_operate::Item) {
-        let no = format!("NO {}", no).green().on_blue();
-        println!("{}: {}", no, item);
+    pub(crate) fn list_print(item: &basic_operate::KeyWithItem) {
+        println!("{}", item);
     }
 
     pub fn error(err_msg: String) {
