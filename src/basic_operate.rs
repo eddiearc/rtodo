@@ -82,6 +82,27 @@ fn confirm(hits: String) -> bool {
     return input.trim().to_lowercase() == "y"
 }
 
+pub(crate) struct Key(String);
+
+
+impl From<sled::IVec> for Key {
+    fn from(value: sled::IVec) -> Self {
+        Key(std::str::from_utf8(&value).unwrap().to_string())
+    }
+}
+
+impl From<String> for Key {
+    fn from(value: String) -> Self {
+        Key(value)
+    }
+}
+
+impl Into<sled::IVec> for Key {
+    fn into(self) -> sled::IVec {
+        self.0.as_bytes().into()
+    }
+}
+
 
 pub(crate) trait Operate {
     fn add(&self, item: Item) -> Result<u32, anyhow::Error>;
@@ -93,13 +114,13 @@ pub(crate) trait Operate {
 }
 
 pub(crate) struct KeyWithItem {
-    pub(crate) k: String,
+    pub(crate) k: Key,
     pub(crate) v: Item,
 }
 
 impl Display for KeyWithItem {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.write_fmt(format_args!("{}: {}", self.k, self.v))
+        f.write_fmt(format_args!("{}: {}", self.k.0, self.v))
     }
     
 }
@@ -203,7 +224,7 @@ impl Operate for Store {
                     return None
                 }
                 match Item::try_from(val) {
-                    Ok(item) if !item.done => Some(Ok(KeyWithItem { k: res.unwrap(), v: item })),
+                    Ok(item) if !item.done => Some(Ok(KeyWithItem { k: res.unwrap().into(), v: item })),
                     _ => None
                 }
                 },
