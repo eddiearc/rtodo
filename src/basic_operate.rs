@@ -81,7 +81,8 @@ fn confirm(hits: String) -> bool {
     return input.trim().to_lowercase() == "y"
 }
 
-pub(crate) struct Key(String);
+#[derive(Debug)]
+pub struct Key(String);
 
 
 impl From<sled::IVec> for Key {

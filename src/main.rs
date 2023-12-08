@@ -1,3 +1,4 @@
+use basic_operate::Key;
 use clap::Parser;
 
 mod interactive;
@@ -23,11 +24,11 @@ struct Args {
 
     /// delete todo item by item Key
     #[arg(long)]
-    delete: Option<String>,
+    delete: Option<Key>,
 
-     /// delete todo item by item Key
-     #[arg(long)]
-     done: Option<String>,
+    /// delete todo item by item Key
+    #[arg(long)]
+    done: Option<Key>,
 
     /// delete_all delete all item list
     #[arg(long)]
