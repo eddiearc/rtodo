@@ -10,7 +10,7 @@ mod basic_operate;
 #[command(author = "eddie", version = "0.1", about = "a simple todo-list program written by rust")]
 struct Args {
 
-    /// Add a todo item
+    /// add a todo item
     #[arg(short, long)]
     add: Option<String>,
     
@@ -46,7 +46,9 @@ fn main() {
     if args.interactive {
         let _ = interactive::process();
     } else {
-        basic_operate::process(args, store);
+        if let Err(err) = basic_operate::process(args, store) {
+            output::error(err.to_string());
+        }
     }
 }
 

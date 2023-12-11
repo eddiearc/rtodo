@@ -7,61 +7,60 @@ use crate::output;
 
 
 
-pub(crate) fn process(args: super::Args, store: impl Operate) {
+pub(crate) fn process(args: super::Args, store: impl Operate) -> anyhow::Result<()> {
     if args.delete_all {
-        delete_all(&store);
+        let _ =delete_all(&store)?;
     } else if let Some(key) = args.delete {
-        delete(&store, key.into());
+        let _ = delete(&store, key)?;
     } else if let Some(key) = args.done {
-        done(&store, key.into());
+        let _ = done(&store, key.into())?;
     }
     if let Some(content) =  args.add {
-        if let Err(msg) = store.add(Item { content, done: false }) {
-            output::error(format!("add item fail, {}", msg));
-        }
+        let _ = store.add(Item { content, done: false })?;
     }
     list_items(&store, args.list);
+    Ok(())
 }
 
-fn delete_all(store: &impl Operate) {
+fn delete_all(store: &impl Operate) -> anyhow::Result<()> {
     if !confirm(format!("confirm delete all items? (Y/N)")) {
-        output::error(format!("cancel delete all items"));
-        return
+        return Err(anyhow::anyhow!("cancel delete all items"))
     }
-     if let Err(msg) = store.delete_all() {
-        output::error(msg.to_string())
-    }
+    store.delete_all()
 }
 
-fn delete(store: &impl Operate, key: Key) {
+fn delete(store: &impl Operate, key: Key) -> anyhow::Result<()> {
     if let Some(v) = store.find_by_key(key.clone().into()) {
         // todo confirm delete operate
         if !confirm(format!("confirm delete this item: {}: {}? (Y/N)", key, v.content)) {
-            output::error(format!("cancel delete item: {}", v));
-            return 
+            return Err(anyhow::anyhow!("cancel delete item"))
         }
         // exec delete
         if let Err(msg) = store.delete(key.into()) {
-            output::error(format!("delete item fail, {}", msg));   
+            return Err(anyhow::anyhow!(msg))   
         }
+        Ok(())
     } else {
-        output::error(format!("delete item fail, {}", ERR_ITEM_NOT_FOUND));
+        return Err(anyhow::anyhow!(ERR_ITEM_NOT_FOUND))
     }
 }
 
-fn done(store: &impl Operate, key: Key) {
+fn done(store: &impl Operate, key: Key) -> anyhow::Result<()> {
     if let Some(v) = store.find_by_key(key.clone().into()) {
+        if v.done {
+            return Err(anyhow::anyhow!("item already done"))
+        }
         // todo confirm done operate
         if !confirm(format!("confirm done this item: {}: {}? (Y/N)", key, v.content)) {
-            output::error(format!("cancel done item: {}", v));
-            return 
+            return Err(anyhow::anyhow!("cancel done item"))
         }
         // exec done
         if let Err(msg) = store.done(key.into()) {
-            output::error(format!("done item fail, {}", msg));   
+            return Err(anyhow::anyhow!(msg))
         }
+        return Ok(())
     } else {
-        output::error(format!("done item fail, {}", ERR_ITEM_NOT_FOUND));
+        return Err(anyhow::anyhow!(ERR_ITEM_NOT_FOUND))
     }
 }
 
