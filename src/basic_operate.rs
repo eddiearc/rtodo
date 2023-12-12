@@ -65,10 +65,8 @@ fn done(store: &impl Operate, key: Key) -> anyhow::Result<()> {
 }
 
 fn list_items(store: &impl Operate, keyword: Option<String>) {
-    if let Err(err) = store.list(keyword.clone()) {
-        panic!("{}", err)
-    }
-    for (_, ele) in  store.list(keyword).expect("list items").iter().enumerate() {
+    for (_, ele) in store.list(keyword)
+        .expect("list items error").iter().enumerate() {
         output::list_print( ele);
     }
 }
